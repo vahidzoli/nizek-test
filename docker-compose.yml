@@ -1,11 +1,12 @@
 version: '2'
 services:
   app:
+    image: nizek:test
     build:
       context: .
       dockerfile: ./Dockerfile
     ports:
-      - 8080:80
+      - 8000:80
     volumes:
       - $PWD/docker-data/storage:/var/www/storage
     working_dir: /var/www
@@ -30,8 +31,10 @@ services:
       QUEUE_CONNECTION: redis
     networks:
       app_internal:
+  
   nizek-job:
       command: php artisan queue:work --tries 3 --timeout=0
+      image: nizek:test
       restart: unless-stopped
       working_dir: /var/www/
       volumes:
