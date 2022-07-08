@@ -1,0 +1,63 @@
+version: '2'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:80
+    volumes:
+      - $PWD/docker-data/storage:/var/www/storage
+    working_dir: /var/www
+    environment:
+      APP_NAME: 'Nizek-Test'
+      APP_ENV: production
+      APP_KEY: 'base64:HJWPOSh5p01/n2qNOHptrDjv3MlSYDHTwN+1wQuQ8bo='
+      APP_DEBUG: 0
+      APP_URL: 'http://localhost:8080'
+      LOG_CHANNEL: stderr
+      LOG_STDERR_LEVEL: info
+      DB_CONNECTION: mysql
+      DB_HOST: 'db'
+      DB_PORT: 3306
+      DB_DATABASE: nizek_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_password
+      SESSION_DRIVER: redis
+      CACHE_DRIVER: redis
+      QUEUE_CONNECTION: redis
+    networks:
+      app_internal:
+  nizek-job:
+      command: php artisan queue:work --tries 3 --timeout=0
+      restart: unless-stopped
+      working_dir: /var/www/
+      volumes:
+        - ./:/var/www
+      networks:
+        app_internal:
+      depends_on:
+        - redis
+  db:
+    image: mysql:5.7
+    volumes:
+      - ./docker-data/db:/var/lib/database
+    environment:
+      MYSQL_DATABASE: nizek_test
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      app_internal:
+  redis:
+    image: 'bitnami/redis:latest'
+    restart: always
+    environment:
+      - REDIS_PASSWORD=redis_password
+    volumes:
+      - ./docker-data/redis-data:/bitnami/redis/data
+    networks:
+      app_internal:
+
+networks:
+  app_internal:
