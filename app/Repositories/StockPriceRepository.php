@@ -37,7 +37,9 @@ class StockPriceRepository implements StockPriceRepositoryInterface
                     ->orderby('id', 'desc')
                     ->first();
 
-                $result[$date] = $this->formula($start, $end);
+                $result[$date]['start_date_value'] = $start->price;
+                $result[$date]['end_date_value'] = $end->price;
+                $result[$date]['change'] = $this->formula($start, $end);
             }
 
             Cache::put('show-changes', $result, 60);
@@ -50,6 +52,8 @@ class StockPriceRepository implements StockPriceRepositoryInterface
     {
         $data = StockPrice::whereBetween('date', [$request->get('end_date'), $request->get('start_date')])->get();
 
+        $result['start_date_value'] = $data[0]->price;
+        $result['end_date_value'] = $data[count($data) - 1]->price;
         $result['change'] = $this->formula($data[0], $data[count($data) - 1]);
 
         return $result;
