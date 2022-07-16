@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\Cache;
 class StockPriceRepository implements StockPriceRepositoryInterface
 {
     protected $stockModel;
+    private $cache;
+    private $carbon;
 
-    public function __construct(StockPrice $stock)
+    public function __construct(StockPrice $stock, Cache $cache)
     {
         $this->stockModel = $stock;
+        $this->cache = $cache;
     }
 
     public function uploadExcel($request)
@@ -23,8 +26,8 @@ class StockPriceRepository implements StockPriceRepositoryInterface
 
     public function showChanges()
     {
-        if(Cache::has('show-changes')){
-            $result = Cache::get('show-changes');
+        if($this->cache::has('show-changes')){
+            $result = $this->cache::get('show-changes');
         } else {
             $start = StockPrice::first();
             $dates = config('dates');
@@ -42,7 +45,7 @@ class StockPriceRepository implements StockPriceRepositoryInterface
                 $result[$date]['change'] = $this->formula($start, $end);
             }
 
-            Cache::put('show-changes', $result, 60);
+            $this->cache::put('show-changes', $result, config('constant.TTL'));
         }
 
         return $result;
@@ -61,40 +64,42 @@ class StockPriceRepository implements StockPriceRepositoryInterface
 
     public function getDateOptions($date, $start)
     {
+        $this->carbon = Carbon::parse($start->date);
+        
         switch($date){
             case '1D':
-                $end_date = Carbon::parse($start->date)->subDay(1)->format('Y-m-d');
+                $end_date = $this->carbon->subDay(1)->format('Y-m-d');
                 break;
             case '1M':  
-                $end_date = Carbon::parse($start->date)->subMonth(1)->format('Y-m-d');
+                $end_date = $this->carbon->subMonth(1)->format('Y-m-d');
                 break;
             case '3M':  
-                $end_date = Carbon::parse($start->date)->subMonth(3)->format('Y-m-d');
+                $end_date = $this->carbon->subMonth(3)->format('Y-m-d');
                 break;
             case '6M':  
-                $end_date = Carbon::parse($start->date)->subMonth(6)->format('Y-m-d');
+                $end_date = $this->carbon->subMonth(6)->format('Y-m-d');
                 break;          
             case 'YTD':  
-                $end_date = Carbon::parse($start->date)->firstOfYear()->format('Y-m-d');
+                $end_date = $this->carbon->firstOfYear()->format('Y-m-d');
                 break;
             case '1Y':  
-                $end_date = Carbon::parse($start->date)->subYear(1)->format('Y-m-d');
+                $end_date = $this->carbon->subYear(1)->format('Y-m-d');
                 break;    
             case '3Y':  
-                $end_date = Carbon::parse($start->date)->subYear(3)->format('Y-m-d');
+                $end_date = $this->carbon->subYear(3)->format('Y-m-d');
                 break;    
             case '5Y':  
-                $end_date = Carbon::parse($start->date)->subYear(5)->format('Y-m-d');
+                $end_date = $this->carbon->subYear(5)->format('Y-m-d');
                 break;    
             case '10Y':  
-                $end_date = Carbon::parse($start->date)->subYear(10)->format('Y-m-d');
+                $end_date = $this->carbon->subYear(10)->format('Y-m-d');
                 break;
             case 'MAX':  
                 $last = StockPrice::latest('id')->first();
                 $end_date = Carbon::parse($last->date)->format('Y-m-d');
                 break;    
             default:
-                $end_date = Carbon::parse($start->date)->subDay(1)->format('Y-m-d');
+                $end_date = $this->carbon->subDay(1)->format('Y-m-d');
                 break;
         }
 
